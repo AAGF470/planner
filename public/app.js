@@ -154,7 +154,17 @@ function drawGrid() {
 // ── Edge SVG ──────────────────────────────────────────
 function initEdgeSVG() {
   const svg = document.createElementNS('http://www.w3.org/2000/svg','svg')
-  svg.id='edge-svg'; svg.setAttribute('width','10000'); svg.setAttribute('height','10000')
+  svg.id = 'edge-svg'
+  // width/height 0 + overflow visible = SVG takes no layout space
+  // but paths render freely in board coordinate space
+  svg.setAttribute('width','0')
+  svg.setAttribute('height','0')
+  svg.setAttribute('overflow','visible')
+  svg.style.position = 'absolute'
+  svg.style.top = '0'
+  svg.style.left = '0'
+  svg.style.pointerEvents = 'none'
+  svg.style.overflow = 'visible'
   const defs = document.createElementNS('http://www.w3.org/2000/svg','defs')
   defs.innerHTML = `
     <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
@@ -262,6 +272,7 @@ function renderEdges() {
     const hit = document.createElementNS('http://www.w3.org/2000/svg','path')
     hit.setAttribute('d',d); hit.setAttribute('fill','none')
     hit.setAttribute('stroke','transparent'); hit.setAttribute('stroke-width','12'); hit.style.cursor='pointer'
+    hit.style.pointerEvents='all'  // override parent SVG's pointer-events:none
     hit.addEventListener('click', ev => { ev.stopPropagation(); S.selectedEdge=edge.id; S.selectedNodes.clear(); updateSelectionVisuals() })
     hit.addEventListener('contextmenu', ev => { ev.preventDefault(); if(confirm('Delete connection?')){ S.edges=S.edges.filter(e=>e.id!==edge.id); renderEdges(); scheduleSave() } })
     g.appendChild(hit)
@@ -283,7 +294,9 @@ function getEdgePoints(fn,tn,fe,te) {
   return { x1:fn.x+(fe.offsetWidth||220), y1:fn.y+(fe.offsetHeight||80)/2, x2:tn.x, y2:tn.y+(te.offsetHeight||80)/2 }
 }
 function bezierPath(x1,y1,x2,y2) {
-  const dx = Math.abs(x2-x1)*0.5
+  // Cap control point offset at 300px so long-distance edges
+  // don't produce gigantic curves that look like spiral fans
+  const dx = Math.min(Math.abs(x2-x1)*0.5, 300)
   return `M ${x1} ${y1} C ${x1+dx} ${y1}, ${x2-dx} ${y2}, ${x2} ${y2}`
 }
 
