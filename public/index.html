@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cryark Planner</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div id="topbar-left">
+    <span id="logo">⬡ CRYARK</span>
+    <span id="save-status">saved</span>
+  </div>
+  <div id="topbar-center">
+    <button class="tb-btn" onclick="setTool('select')"    id="tool-select"    title="Select (V)">⬚ Select</button>
+    <button class="tb-btn" onclick="setTool('node')"      id="tool-node"      title="Add Node (N)">+ Node</button>
+    <button class="tb-btn" onclick="setTool('connect')"   id="tool-connect"   title="Connect (C)">⤳ Connect</button>
+    <button class="tb-btn" onclick="setTool('pan')"       id="tool-pan"       title="Pan (Space)">✥ Pan</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" onclick="deleteSelected()"     title="Delete selected (Del)">✕ Delete</button>
+    <button class="tb-btn" onclick="fitView()"            title="Fit all nodes in view (F)">⊡ Fit</button>
+  </div>
+  <div id="topbar-right">
+    <button class="tb-btn" onclick="exportBackup()">↓ Export</button>
+    <label class="tb-btn">↑ Import<input type="file" accept=".json" onchange="importBackup(event)" style="display:none"></label>
+    <button class="tb-btn" onclick="openProjectsPanel()">≡ Projects</button>
+  </div>
+</div>
+
+<!-- CANVAS AREA -->
+<div id="canvas-wrap">
+  <canvas id="grid-canvas"></canvas>
+  <div id="board"></div>
+
+  <!-- Zoom indicator -->
+  <div id="zoom-badge">100%</div>
+
+  <!-- Mini-map (bottom right) -->
+  <canvas id="minimap"></canvas>
+</div>
+
+<!-- NODE DETAIL PANEL (slides in from right) -->
+<div id="detail-panel" class="side-panel">
+  <div class="panel-header">
+    <span id="detail-title">Node</span>
+    <button onclick="closeDetailPanel()">✕</button>
+  </div>
+  <div id="detail-body"></div>
+</div>
+
+<!-- PROJECTS PANEL (slides in from left) -->
+<div id="projects-panel" class="side-panel left-panel">
+  <div class="panel-header">
+    <span>Projects</span>
+    <button onclick="closeProjectsPanel()">✕</button>
+  </div>
+  <div id="projects-body">
+    <button class="full-btn" onclick="addProject()">+ New Project</button>
+    <div id="projects-list"></div>
+  </div>
+</div>
+
+<!-- NODE CREATION MODAL -->
+<div id="node-modal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3 id="node-modal-title">New Node</h3>
+
+    <label>Type
+      <select id="nm-type" onchange="onNodeTypeChange()">
+        <option value="phase">Phase / Milestone</option>
+        <option value="task">Task</option>
+        <option value="note">Note</option>
+        <option value="doc">Document link</option>
+        <option value="project">Project root</option>
+      </select>
+    </label>
+
+    <label>Title <input type="text" id="nm-title" placeholder="Node title"></label>
+
+    <div id="nm-phase-fields">
+      <label>Project
+        <select id="nm-project"></select>
+      </label>
+      <label>Start date <input type="date" id="nm-start"></label>
+      <label>End date   <input type="date" id="nm-end"></label>
+      <label>Status
+        <select id="nm-status">
+          <option value="planned">Planned</option>
+          <option value="active">Active</option>
+          <option value="done">Done</option>
+          <option value="blocked">Blocked</option>
+        </select>
+      </label>
+      <label>Milestone <input type="text" id="nm-milestone" placeholder="The deliverable that marks this done"></label>
+      <label>Tasks (one per line) <textarea id="nm-tasks" rows="4"></textarea></label>
+    </div>
+
+    <div id="nm-doc-fields" style="display:none">
+      <label>File path <input type="text" id="nm-path" placeholder="/Volumes/AngelDrive/..."></label>
+      <label>URL       <input type="text" id="nm-url"  placeholder="https://..."></label>
+    </div>
+
+    <label>Notes / description <textarea id="nm-notes" rows="3"></textarea></label>
+
+    <label>Color
+      <div id="nm-color-swatches" class="color-swatches"></div>
+    </label>
+
+    <div class="modal-actions">
+      <button onclick="saveNodeModal()">Save</button>
+      <button onclick="closeModal('node-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div id="project-modal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3 id="project-modal-title">New Project</h3>
+    <label>Name    <input type="text" id="pm-name"></label>
+    <label>Description <textarea id="pm-desc" rows="2"></textarea></label>
+    <label>Color
+      <div id="pm-color-swatches" class="color-swatches"></div>
+    </label>
+    <div class="modal-actions">
+      <button onclick="saveProjectModal()">Save</button>
+      <button onclick="closeModal('project-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Context menu -->
+<div id="ctx-menu" style="display:none">
+  <div class="ctx-item" onclick="ctxEdit()">Edit node</div>
+  <div class="ctx-item" onclick="ctxConnect()">Start connection</div>
+  <div class="ctx-item" onclick="ctxDuplicate()">Duplicate</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" onclick="ctxDelete()">Delete</div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

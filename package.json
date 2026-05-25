@@ -1,0 +1,14 @@
+{
+  "name": "cryark-planner",
+  "version": "1.0.0",
+  "description": "Angel's project planner — planner.cryark.net",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}
