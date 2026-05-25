@@ -154,17 +154,7 @@ function drawGrid() {
 // ── Edge SVG ──────────────────────────────────────────
 function initEdgeSVG() {
   const svg = document.createElementNS('http://www.w3.org/2000/svg','svg')
-  svg.id = 'edge-svg'
-  // width/height 0 + overflow visible = SVG takes no layout space
-  // but paths render freely in board coordinate space
-  svg.setAttribute('width','0')
-  svg.setAttribute('height','0')
-  svg.setAttribute('overflow','visible')
-  svg.style.position = 'absolute'
-  svg.style.top = '0'
-  svg.style.left = '0'
-  svg.style.pointerEvents = 'none'
-  svg.style.overflow = 'visible'
+  svg.id='edge-svg'; svg.setAttribute('width','10000'); svg.setAttribute('height','10000')
   const defs = document.createElementNS('http://www.w3.org/2000/svg','defs')
   defs.innerHTML = `
     <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
@@ -238,45 +228,15 @@ function createNodeEl(node) {
   el.addEventListener('mousedown', e => {
     if (e.button !== 0) return
     e.stopPropagation()
-
-    // Port drag → start connection (drag from port to another node's port)
-    if (e.target.classList.contains('node-port')) {
-      e.preventDefault()
-      startConnection(node.id)
-      return
-    }
-
-    // Connect tool: clicking a node starts or completes connection
-    if (S.tool === 'connect') {
-      handleConnectClick(node.id)
-      return
-    }
-
-    // Normal: select + begin drag
+    // Port click → start connection
+    if (e.target.classList.contains('node-port')) { startConnection(node.id); return }
+    // Connect tool click
+    if (S.tool === 'connect') { handleConnectClick(node.id); return }
+    // Select + begin drag
     if (!e.shiftKey) { S.selectedNodes.clear() }
     S.selectedNodes.add(node.id); S.selectedEdge = null; updateSelectionVisuals()
     S.draggingNode = { id:node.id, startX:node.x, startY:node.y, mouseX:e.clientX, mouseY:e.clientY }
     closeCtxMenu()
-  })
-
-  // When mouse enters another node while dragging a connection → highlight it
-  el.addEventListener('mouseenter', e => {
-    if (S.connectingFrom && S.connectingFrom !== node.id) {
-      el.classList.add('connect-target')
-    }
-  })
-  el.addEventListener('mouseleave', e => {
-    el.classList.remove('connect-target')
-  })
-
-  // Releasing mouse on a node body (not just port) completes the connection
-  el.addEventListener('mouseup', e => {
-    if (e.button !== 0) return
-    el.classList.remove('connect-target')
-    if (S.connectingFrom && S.connectingFrom !== node.id) {
-      e.stopPropagation()
-      handleConnectClick(node.id)
-    }
   })
   el.addEventListener('dblclick', e => { e.stopPropagation(); openDetailPanel(node.id) })
   el.addEventListener('contextmenu', e => {
@@ -296,23 +256,28 @@ function renderEdges() {
     if (!fe||!te) return
     const {x1,y1,x2,y2} = getEdgePoints(fn,tn,fe,te)
     const d = bezierPath(x1,y1,x2,y2), isSel = S.selectedEdge === edge.id
+    const stroke = isSel ? '#00c8e0' : '#2a3f5a'
     const g = document.createElementNS('http://www.w3.org/2000/svg','g')
-    g.className = 'edge-group'; g.dataset.id = edge.id
+    g.setAttribute('class', 'edge-group'); g.dataset.id = edge.id
     // Wide transparent hit area
     const hit = document.createElementNS('http://www.w3.org/2000/svg','path')
     hit.setAttribute('d',d); hit.setAttribute('fill','none')
     hit.setAttribute('stroke','transparent'); hit.setAttribute('stroke-width','12'); hit.style.cursor='pointer'
-    hit.style.pointerEvents='all'  // override parent SVG's pointer-events:none
     hit.addEventListener('click', ev => { ev.stopPropagation(); S.selectedEdge=edge.id; S.selectedNodes.clear(); updateSelectionVisuals() })
     hit.addEventListener('contextmenu', ev => { ev.preventDefault(); if(confirm('Delete connection?')){ S.edges=S.edges.filter(e=>e.id!==edge.id); renderEdges(); scheduleSave() } })
     g.appendChild(hit)
+    // Path — no marker-end (webkit bug: markers inside transformed elements ghost)
     const path = document.createElementNS('http://www.w3.org/2000/svg','path')
-    path.className = 'edge-path'+(isSel?' selected':'')
-    path.setAttribute('d',d); path.setAttribute('marker-end', isSel?'url(#arr-sel)':'url(#arr)')
+    path.setAttribute('class', 'edge-path'+(isSel?' selected':''))
+    path.setAttribute('d',d)
+    path.setAttribute('stroke', stroke)
     g.appendChild(path)
+    // Manual arrowhead polygon at endpoint (avoids marker-end webkit bug entirely)
+    const arr = arrowHead(x1,y1,x2,y2,stroke)
+    g.appendChild(arr)
     if (edge.label) {
       const txt = document.createElementNS('http://www.w3.org/2000/svg','text')
-      txt.className='edge-label'; txt.setAttribute('x',(x1+x2)/2); txt.setAttribute('y',(y1+y2)/2-5)
+      txt.setAttribute('class','edge-label'); txt.setAttribute('x',(x1+x2)/2); txt.setAttribute('y',(y1+y2)/2-5)
       txt.setAttribute('text-anchor','middle'); txt.textContent=edge.label
       g.appendChild(txt)
     }
@@ -320,12 +285,29 @@ function renderEdges() {
   })
 }
 
+function arrowHead(x1,y1,x2,y2,color) {
+  // Tangent at t=1 of cubic bezier C (x1+dx,y1) (x2-dx,y2) (x2,y2)
+  // is direction from control point (x2-dx,y2) toward (x2,y2)
+  const dx = Math.min(Math.abs(x2-x1)*0.5, 300)
+  const ang = Math.atan2(y2 - y2, x2 - (x2-dx))  // horizontal: atan2(0,dx)=0 when same y
+  // Better: use actual last control point
+  const cpx = x2 - dx, cpy = y2
+  const a = Math.atan2(y2 - cpy, x2 - cpx)
+  const size = 7
+  const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon')
+  poly.setAttribute('points', [
+    x2, y2,
+    x2 - size*Math.cos(a-0.4), y2 - size*Math.sin(a-0.4),
+    x2 - size*Math.cos(a+0.4), y2 - size*Math.sin(a+0.4)
+  ].join(' '))
+  poly.setAttribute('fill', color)
+  return poly
+}
+
 function getEdgePoints(fn,tn,fe,te) {
   return { x1:fn.x+(fe.offsetWidth||220), y1:fn.y+(fe.offsetHeight||80)/2, x2:tn.x, y2:tn.y+(te.offsetHeight||80)/2 }
 }
 function bezierPath(x1,y1,x2,y2) {
-  // Cap control point offset at 300px so long-distance edges
-  // don't produce gigantic curves that look like spiral fans
   const dx = Math.min(Math.abs(x2-x1)*0.5, 300)
   return `M ${x1} ${y1} C ${x1+dx} ${y1}, ${x2-dx} ${y2}, ${x2} ${y2}`
 }
@@ -342,7 +324,9 @@ function handleConnectClick(nodeId) {
   const exists = S.edges.some(e=>(e.fromId===S.connectingFrom&&e.toId===nodeId)||(e.fromId===nodeId&&e.toId===S.connectingFrom))
   if (!exists) { S.edges.push({ id:uid(), fromId:S.connectingFrom, toId:nodeId, label:'' }); scheduleSave() }
   document.getElementById('node-'+S.connectingFrom)?.classList.remove('connecting-source')
-  S.connectingFrom = null; renderEdges()
+  S.connectingFrom = null
+  const de = document.getElementById('drag-edge'); if (de) de.style.display='none'
+  renderEdges()
 }
 
 function cancelConnection() {
@@ -407,15 +391,11 @@ function initEventListeners() {
     if (S.isPanning)    { endPan() }
     if (S.marquee)      { finishMarquee() }
 
-    // If we released on empty canvas while connecting → cancel
-    const onCanvas = (
-      e.target === wrap ||
-      e.target.id === 'grid-canvas' ||
-      e.target.id === 'board' ||
-      e.target.id === 'edge-svg'
-    )
-    if (S.connectingFrom && onCanvas) {
-      cancelConnection()
+    // Releasing on a port while connecting
+    if (S.connectingFrom && e.target.classList.contains('node-port')) {
+      const tid = e.target.dataset.id
+      if (tid && tid !== S.connectingFrom) handleConnectClick(tid)
+      else cancelConnection()
     }
   })
 

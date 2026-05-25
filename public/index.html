@@ -19,16 +19,8 @@
     </a>
     <span id="save-status">saved</span>
   </div>
-  <div id="topbar-center">
-    <button class="tb-btn active" onclick="setTool('select')"  id="tool-select"  title="Select / Marquee (V)">⬚ Select</button>
-    <button class="tb-btn" onclick="setTool('node')"    id="tool-node"    title="Add Node (N)">+ Node</button>
-    <button class="tb-btn" onclick="setTool('connect')" id="tool-connect" title="Connect nodes (C)">⤳ Connect</button>
-    <div class="tb-sep"></div>
-    <button class="tb-btn" onclick="deleteSelected()"   title="Delete selected (Del)">✕ Delete</button>
-    <button class="tb-btn" onclick="fitView()"          title="Fit view (F)">⊡ Fit</button>
-    <span id="tb-hint">Middle mouse = pan</span>
-  </div>
-  <div id="topbar-right">
+
+
     <button class="tb-btn" onclick="exportBackup()">↓ Export</button>
     <label class="tb-btn">↑ Import<input type="file" accept=".json" onchange="importBackup(event)" style="display:none"></label>
     <button class="tb-btn" onclick="openProjectsPanel()">≡ Projects</button>
