@@ -19,16 +19,8 @@
     </a>
     <span id="save-status">saved</span>
   </div>
-  <div id="topbar-center">
-    <button class="tb-btn" onclick="setTool('select')"  id="tool-select"  title="Select (V)">⬚ Select</button>
-    <button class="tb-btn" onclick="setTool('node')"    id="tool-node"    title="Add Node (N)">+ Node</button>
-    <button class="tb-btn" onclick="setTool('connect')" id="tool-connect" title="Connect (C)">⤳ Connect</button>
-    <button class="tb-btn" onclick="setTool('pan')"     id="tool-pan"     title="Pan (Space)">✥ Pan</button>
-    <div class="tb-sep"></div>
-    <button class="tb-btn" onclick="deleteSelected()"   title="Delete selected (Del)">✕ Delete</button>
-    <button class="tb-btn" onclick="fitView()"          title="Fit all nodes in view (F)">⊡ Fit</button>
-  </div>
-  <div id="topbar-right">
+
+
     <button class="tb-btn" onclick="exportBackup()">↓ Export</button>
     <label class="tb-btn">↑ Import<input type="file" accept=".json" onchange="importBackup(event)" style="display:none"></label>
     <button class="tb-btn" onclick="openProjectsPanel()">≡ Projects</button>

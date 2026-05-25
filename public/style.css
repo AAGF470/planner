@@ -398,3 +398,11 @@ html, body {
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* toolbar hint text */
+#tb-hint {
+  font-size: 11px;
+  color: var(--text3);
+  margin-left: 6px;
+  white-space: nowrap;
+}
