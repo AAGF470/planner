@@ -238,15 +238,45 @@ function createNodeEl(node) {
   el.addEventListener('mousedown', e => {
     if (e.button !== 0) return
     e.stopPropagation()
-    // Port click → start connection
-    if (e.target.classList.contains('node-port')) { startConnection(node.id); return }
-    // Connect tool click
-    if (S.tool === 'connect') { handleConnectClick(node.id); return }
-    // Select + begin drag
+
+    // Port drag → start connection (drag from port to another node's port)
+    if (e.target.classList.contains('node-port')) {
+      e.preventDefault()
+      startConnection(node.id)
+      return
+    }
+
+    // Connect tool: clicking a node starts or completes connection
+    if (S.tool === 'connect') {
+      handleConnectClick(node.id)
+      return
+    }
+
+    // Normal: select + begin drag
     if (!e.shiftKey) { S.selectedNodes.clear() }
     S.selectedNodes.add(node.id); S.selectedEdge = null; updateSelectionVisuals()
     S.draggingNode = { id:node.id, startX:node.x, startY:node.y, mouseX:e.clientX, mouseY:e.clientY }
     closeCtxMenu()
+  })
+
+  // When mouse enters another node while dragging a connection → highlight it
+  el.addEventListener('mouseenter', e => {
+    if (S.connectingFrom && S.connectingFrom !== node.id) {
+      el.classList.add('connect-target')
+    }
+  })
+  el.addEventListener('mouseleave', e => {
+    el.classList.remove('connect-target')
+  })
+
+  // Releasing mouse on a node body (not just port) completes the connection
+  el.addEventListener('mouseup', e => {
+    if (e.button !== 0) return
+    el.classList.remove('connect-target')
+    if (S.connectingFrom && S.connectingFrom !== node.id) {
+      e.stopPropagation()
+      handleConnectClick(node.id)
+    }
   })
   el.addEventListener('dblclick', e => { e.stopPropagation(); openDetailPanel(node.id) })
   el.addEventListener('contextmenu', e => {
@@ -377,11 +407,15 @@ function initEventListeners() {
     if (S.isPanning)    { endPan() }
     if (S.marquee)      { finishMarquee() }
 
-    // Releasing on a port while connecting
-    if (S.connectingFrom && e.target.classList.contains('node-port')) {
-      const tid = e.target.dataset.id
-      if (tid && tid !== S.connectingFrom) handleConnectClick(tid)
-      else cancelConnection()
+    // If we released on empty canvas while connecting → cancel
+    const onCanvas = (
+      e.target === wrap ||
+      e.target.id === 'grid-canvas' ||
+      e.target.id === 'board' ||
+      e.target.id === 'edge-svg'
+    )
+    if (S.connectingFrom && onCanvas) {
+      cancelConnection()
     }
   })
 
